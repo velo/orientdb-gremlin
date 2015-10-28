@@ -7,6 +7,8 @@ import com.orientechnologies.orient.core.db.record.OIdentifiable;
 import com.orientechnologies.orient.core.db.record.ORecordLazyList;
 import com.orientechnologies.orient.core.db.record.ORecordLazyMultiValue;
 import com.orientechnologies.orient.core.db.record.ridbag.ORidBag;
+import com.orientechnologies.orient.core.id.ORID;
+import com.orientechnologies.orient.core.id.ORecordId;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OImmutableClass;
 import com.orientechnologies.orient.core.metadata.schema.OProperty;
@@ -21,6 +23,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.isNullOrEmpty;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -28,17 +31,27 @@ import java.util.List;
 public final class OrientVertex extends OrientElement implements Vertex {
     public static final String CONNECTION_OUT_PREFIX = OrientGraphUtils.CONNECTION_OUT + "_";
     public static final String CONNECTION_IN_PREFIX  = OrientGraphUtils.CONNECTION_IN + "_";
+	private static final List<String> INTERNAL_FIELDS = Arrays.asList("@rid", "@class");
 
     public OrientVertex(final OrientGraph graph, final OIdentifiable rawElement) {
         super(graph, rawElement);
     }
 
     public OrientVertex(OrientGraph graph, String className) {
-        super(graph, createRawElement(graph, className));
+        this(graph, className, null);
     }
 
-    protected static ODocument createRawElement(OrientGraph graph, String className) {
+    public OrientVertex(OrientGraph graph, String className, Object id) {
+    	 super(graph, createRawElement(graph, className, id));
+	}
+
+	protected static ODocument createRawElement(OrientGraph graph, String className, Object id) {
         graph.createVertexClass(className);
+        if(id instanceof ORID)
+        	return new ODocument(className, (ORID) id);
+        if(id != null)
+        	throw  new UnsupportedOperationException("Vertex does not support user supplied identifiers type " + id.getClass());
+
         return new ODocument(className);
     }
 
@@ -90,7 +103,8 @@ public final class OrientVertex extends OrientElement implements Vertex {
 
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
         Iterator<? extends Property<V>> properties = super.properties(propertyKeys);
-        return StreamUtils.asStream(properties).map(p ->
+        return StreamUtils.asStream(properties).filter(p ->
+        	!INTERNAL_FIELDS.contains(p.key()) ).map(p ->
             (VertexProperty<V>) new OrientVertexProperty<>( p.key(), p.value(), (OrientVertex) p.element())
         ).iterator();
     }
