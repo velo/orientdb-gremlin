@@ -151,7 +151,7 @@ public final class OrientGraph implements Graph {
                     this.pool.reCreatePool();
                     this.database = this.pool.acquire();
                 } else {
-                    ODatabaseDocumentTx replaceDb = new ODatabaseDocumentTx(this.database.getURL(), this.database.isKeepStorageOpen());
+                    ODatabaseDocumentTx replaceDb = new ODatabaseDocumentTx(this.database.getURL());
                     replaceDb.open(user, password);
                     this.database = replaceDb;
                 }
