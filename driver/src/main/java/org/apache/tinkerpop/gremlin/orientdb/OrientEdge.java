@@ -18,7 +18,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-public class OrientEdge extends OrientElement implements Edge {
+public final class OrientEdge extends OrientElement implements Edge {
 
     private static final List<String> INTERNAL_FIELDS = Arrays.asList("@rid", "@class", "in", "out");
 
@@ -28,9 +28,9 @@ public class OrientEdge extends OrientElement implements Edge {
 
     public OrientEdge(OrientGraph graph, OIdentifiable rawElement, final OIdentifiable out, final OIdentifiable in, final String iLabel) {
         super(graph, rawElement);
-        vOut = checkNotNull(out);
-        vIn = checkNotNull(in);
-        label = checkNotNull(iLabel);
+        vOut = checkNotNull(out, "out vertex on edge " + rawElement);
+        vIn = checkNotNull(in, "out vertex on edge " + rawElement);
+        label = checkNotNull(iLabel, "label on edge " + rawElement);
     }
 
     public OrientEdge(OrientGraph graph, String className, final OIdentifiable out, final OIdentifiable in, final String iLabel) {
@@ -101,6 +101,10 @@ public class OrientEdge extends OrientElement implements Edge {
         final String fieldName = OrientVertex.getConnectionFieldName(direction, this.label());
         ODocument doc = this.getVertex(direction).getRawDocument();
         Object found = doc.field(fieldName);
+        if (found == null)
+            //already removed
+            return;
+
         if (found instanceof ORidBag) {
             ORidBag bag = (ORidBag) found;
             bag.remove(this.getRawElement());
@@ -122,10 +126,6 @@ public class OrientEdge extends OrientElement implements Edge {
         if (doc == null)
             return null;
 
-        //        if (settings != null && settings.isKeepInMemoryReferences())
-        // AVOID LAZY RESOLVING+SETTING OF RECORD
-        //            return doc.rawField(OrientGraphUtils.CONNECTION_OUT);
-        //        else
         return doc.field(OrientGraphUtils.CONNECTION_OUT);
     }
 
@@ -141,10 +141,6 @@ public class OrientEdge extends OrientElement implements Edge {
         if (doc == null)
             return null;
 
-        //        if (settings != null && settings.isKeepInMemoryReferences())
-        // AVOID LAZY RESOLVING+SETTING OF RECORD
-        //            return doc.rawField(OrientGraphUtils.CONNECTION_IN);
-        //        else
         return doc.field(OrientGraphUtils.CONNECTION_IN);
     }
 
